@@ -26,6 +26,7 @@ static Levels currentLevel;
     WeaponsDisplayer *_weaponsDisplayer;
     CCNode * _level3Node;
     CCNode *_level1_instruction;
+    CCNode *_level2_instruction;
     
     // Nodes defined in this file
     Mouse * mouse;
@@ -128,6 +129,7 @@ static Levels currentLevel;
     
     // level init
     [_level1_instruction setVisible:FALSE];
+    [_level2_instruction setVisible:FALSE];
     
     [self initGameLevel];
 }
@@ -143,7 +145,7 @@ static Levels currentLevel;
             [_weaponsDisplayer disableFork];
             [_weaponsDisplayer setScoop];
             [_level1_instruction setVisible:TRUE];
-            // [self pause];
+            [self pause];
             NSLog(@"[Gamescene][didLoadFromCCB] level 1");
             break;
         case level2:
@@ -158,6 +160,8 @@ static Levels currentLevel;
             
             [mouse setRandomFlyModeWithLeft:sceneWidth/1.5 right:(sceneWidth-100) up:(sceneHeight-60) down:sceneHeight/1.6];
             
+            [_level2_instruction setVisible:TRUE];
+            [self pause];
             NSLog(@"[Gamescene][didLoadFromCCB] level 2");
             break;
         case level3:
@@ -179,6 +183,13 @@ static Levels currentLevel;
 {
     _level1_instruction.visible = FALSE;
     [_level1_instruction removeFromParentAndCleanup:TRUE];
+    [self resume];
+}
+
+- (void) level2Play
+{
+    _level2_instruction.visible = FALSE;
+    [_level2_instruction removeFromParentAndCleanup:TRUE];
     [self resume];
 }
 
