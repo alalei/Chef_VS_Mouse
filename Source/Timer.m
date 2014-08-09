@@ -21,6 +21,9 @@
     int TIME_UPDATE_INTERVAL; //ms, repeat per updateTimeInterval ms
     
     bool isPaused;
+    
+    // NSTimer *mtimer;
+    CCTimer *mtimer2;
     //float bar_ori_pos_width;
     //float bar_ori_pos_height;
 }
@@ -57,12 +60,18 @@
         return;
     }
     
+    if (mtimer2 != nil) {
+        [mtimer2 setPaused:YES];
+        // [mtimer invalidate];
+    }
+    
     millisec = millisecond;
     totalTime = millisecond;
     isPaused = FALSE;
     
     [self refreshTimer];
-    [NSTimer scheduledTimerWithTimeInterval:1.0f target:self selector:@selector(updateTime) userInfo:nil repeats:NO];
+    mtimer2 = [self schedule:@selector(updateTime) interval:1.0f];
+    // mtimer = [NSTimer scheduledTimerWithTimeInterval:1.0f target:self selector:@selector(updateTime) userInfo:nil repeats:NO];
 }
 
 - (void) resetWithTime:(int)seconds
@@ -70,6 +79,11 @@
     if (seconds < 0) {
         return;
     }
+    
+    if (mtimer2 != nil) {
+        [mtimer2 setPaused:YES];
+    }
+    
     millisec = 1000 * seconds;
     totalTime = 1000 * seconds;
     isPaused = FALSE;
@@ -81,15 +95,28 @@
 - (void) pause
 {
     isPaused = TRUE;
+    if (mtimer2 != nil) {
+        [mtimer2 setPaused:YES];
+    }
+    NSLog(@"[Timer][pause]");
 }
 
 - (void) resume
 {
     isPaused = FALSE;
+    NSLog(@"[Timer][resume]");
+    if (mtimer2 == nil) {
+        mtimer2 = [self schedule:@selector(updateTime) interval:1.0f];
+        // mtimer = [NSTimer scheduledTimerWithTimeInterval:1.0f target:self selector:@selector(updateTime) userInfo:nil repeats:NO];
+    } else {
+        [mtimer2 setPaused:NO];
+    }
 }
 
 - (void) updateTime
 {
+    // NSLog(@"[Timer][updateTime] millisec: %ld", millisec);
+    
     if (isPaused) {
         return;
     }
@@ -105,11 +132,14 @@
     [self refreshTimer];
     @try {
         if (millisec <= 0) {
+            NSLog(@"[Timer][updateTime] timeup");
+            [mtimer2 setPaused:YES];
+            // [mtimer invalidate];
+            // mtimer = nil;
             if (timerDlg != nil) {
                 [timerDlg timeup];
             }
         } else {
-            [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(updateTime) userInfo:nil repeats:NO];
         }
     } @catch (NSException *e) {
         NSLog(@"[Timer][updateTime] Exception: %@", e.description);

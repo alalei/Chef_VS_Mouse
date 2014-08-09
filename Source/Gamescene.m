@@ -74,6 +74,7 @@ static Levels currentLevel;
 
 - (void)didLoadFromCCB
 {
+    NSLog(@"[Gamescene] didLoadFromCCB");
     // debug setting
     _physicsNode.debugDraw = false;
     
@@ -112,7 +113,9 @@ static Levels currentLevel;
     hitCounter = 0;
     score = 0;
     isWin = FALSE;
-    [_timer resetWithTime:GAME_TIME_SECOND];
+    
+    // set timer
+    // [_timer resetWithTime:GAME_TIME_SECOND];
     [_timer startWithTime:GAME_TIME_SECOND];
     [_timer setDelegate:self];
     
@@ -141,37 +144,50 @@ static Levels currentLevel;
         case level1:
             _level3Node.visible = FALSE;
             [_level3Node removeFromParent];
+            [_level2_instruction setVisible:FALSE];
+            [_level2_instruction removeFromParent];
+            [_level1_instruction setVisible:TRUE];
+            
             // set weapon
             [_weaponsDisplayer disableFork];
             [_weaponsDisplayer setScoop];
-            [_level1_instruction setVisible:TRUE];
+            
+            [mouse setRandomWalkModeWithLeft:sceneWidth/1.5 right:(sceneWidth-100)];
+            
             [self pause];
-            NSLog(@"[Gamescene][didLoadFromCCB] level 1");
+            NSLog(@"[Gamescene][initGameLevel] level 1");
             break;
         case level2:
             if (mouse != NULL) {
                 [mouse flyTo:(sceneHeight * _fly_limit_node.position.y) withTime:2.0f];
             }
             _level3Node.visible = FALSE;
-            _level1_instruction.visible = FALSE;
             [_level3Node removeFromParent];
+            _level1_instruction.visible = FALSE;
+            [_level1_instruction removeFromParent];
+            [_level2_instruction setVisible:TRUE];
+            
             // set weapon
             [_weaponsDisplayer setScoop];
             
             [mouse setRandomFlyModeWithLeft:sceneWidth/1.5 right:(sceneWidth-100) up:(sceneHeight-60) down:sceneHeight/1.6];
-            
-            [_level2_instruction setVisible:TRUE];
             [self pause];
-            NSLog(@"[Gamescene][didLoadFromCCB] level 2");
+            NSLog(@"[Gamescene][initGameLevel] level 2");
             break;
         case level3:
             _level3Node.visible = TRUE;
             _level1_instruction.visible = FALSE;
+            [_level1_instruction removeFromParent];
+            [_level2_instruction setVisible:FALSE];
+            [_level2_instruction removeFromParent];
+            
             // set weapon
             [_weaponsDisplayer setScoop];
+            
+            [mouse setRandomFlyModeWithLeft:sceneWidth/1.5 right:(sceneWidth-100) up:(sceneHeight-60) down:sceneHeight/1.6];
             break;
         default:
-            NSLog(@"[Gamescene][didLoadFromCCB] currentLevel is not set");
+            NSLog(@"[Gamescene][initGameLevel] currentLevel is not set");
             currentLevel = level1;
             [self initGameLevel];
             break;
@@ -182,14 +198,14 @@ static Levels currentLevel;
 - (void) level1Play
 {
     _level1_instruction.visible = FALSE;
-    [_level1_instruction removeFromParentAndCleanup:TRUE];
+    // [_level1_instruction removeFromParentAndCleanup:TRUE];
     [self resume];
 }
 
 - (void) level2Play
 {
     _level2_instruction.visible = FALSE;
-    [_level2_instruction removeFromParentAndCleanup:TRUE];
+    // [_level2_instruction removeFromParentAndCleanup:TRUE];
     [self resume];
 }
 
@@ -208,7 +224,7 @@ static Levels currentLevel;
     CGPoint launchDirection = ccp(1, 0.7);
     
     int distance = _mouseJointNode.position.x - _chef.position.x;
-    NSLog(@"distance: %d", distance);
+    // NSLog(@"distance: %d", distance);
     
     bulletNode.physicsBody.allowsRotation = true;
     
@@ -314,20 +330,20 @@ static Levels currentLevel;
 
 - (void)touchMoved:(UITouch *)touch withEvent:(UIEvent *)event
 {
-    NSLog(@"Touch moved");
+    // NSLog(@"Touch moved");
 }
 
 
 -(void) touchEnded:(UITouch *)touch withEvent:(UIEvent *)event
 {
-    NSLog(@"Touch ended");
+    // NSLog(@"Touch ended");
     
 }
 
 
 -(void) touchCancelled:(UITouch *)touch withEvent:(UIEvent *)event
 {
-    NSLog(@"Touch cancelled");
+    // NSLog(@"Touch cancelled");
 }
 
 
@@ -398,7 +414,7 @@ static Levels currentLevel;
     }
     
     if ([target isKindOfClass:[Mouse class]]) {
-        NSLog(@"Mouse hitted by fork");
+        // NSLog(@"Mouse hitted by fork");
         float energy = [pair totalKineticEnergy];
         [(Mouse *)target hittedBy:(Fork *)fork withEnergy:energy];
         
@@ -458,6 +474,7 @@ static Levels currentLevel;
     NSLog(@"clicked Retry");
     @try {
         // [[CCDirector sharedDirector]replaceScene:[CCBReader loadAsScene:@"Gamescene"]];
+        _menu.visible = FALSE;
         [self retry];
     } @catch (NSException * e) {
         NSLog(@"[Gamescene][OnClickMenu] Exception: %@", e.description);
@@ -530,14 +547,16 @@ static Levels currentLevel;
 
 - (void) retry
 {
-    [self resume];
+    
     [[CCDirector sharedDirector]replaceScene:[CCBReader loadAsScene:@"Gamescene"] withTransition:[CCTransition transitionFadeWithDuration:0.5f]];
+    [[CCDirector sharedDirector] resume];
+    // [[CCDirector sharedDirector]replaceScene:[CCBReader loadAsScene:@"Gamescene"]];
 }
 
 - (void) pause
 {
-    [[CCDirector sharedDirector] pause];
     [_timer pause];
+    [[CCDirector sharedDirector] pause];
 }
 
 - (void) resume
@@ -566,22 +585,13 @@ static Levels currentLevel;
     }
 }
 
-/*
-- (void) resetBackground
-{
-    CCActionMoveTo *bgReset = [CCActionMoveTo actionWithDuration:0.5 position:ccp(0,0)];
-    [_bgNode runAction:bgReset];
-}
-*/
-
-
 - (void) finishGame
 {
-    
     score += hitCounter*200;
     [_scoreBoard setScore:score];
     if (isWin) {
         [_scoreBoard setTitle:@"You Win!"];
+        [_timer pause];
         // win the game
         NSLog(@"----- You Win!!! -----");
     } else {

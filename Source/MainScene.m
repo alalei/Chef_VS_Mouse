@@ -14,7 +14,8 @@
     
     @try {
         CCScene *gameplayScene = [CCBReader loadAsScene:@"Gamescene"];
-        [[CCDirector sharedDirector] replaceScene:gameplayScene];
+        [[CCDirector sharedDirector]replaceScene:gameplayScene];
+        // [[CCDirector sharedDirector]replaceScene:gameplayScene withTransition:[CCTransition transitionFadeWithDuration:1.0f]];
     }
     @catch (NSException *e) {
         NSLog(@"Exception: %@", e);

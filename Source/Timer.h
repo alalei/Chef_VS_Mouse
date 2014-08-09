@@ -18,7 +18,6 @@
 
 @interface Timer : CCNode
 
-
 - (void) setDelegate:(id)delegate;
 - (void) startWithTime:(int)seconds;
 - (void) pause;

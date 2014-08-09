@@ -14,21 +14,27 @@
     CCNode * _balloon_node;
     CCNode * _mouse_body;
     
+    CCNodeColor *_bar;
+    CCNodeColor *_barRef;
     Balloon * balloon;
     Boolean isBlink;
     id MouseDlg;
     bool isLive;
     bool isFlying;
+    bool isStable;
+    NSObject *stableLock;
     int groundHeight;
     
     // random fly mode
     Boolean isRandomFly;
+    Boolean isRandomWalk;
     int rLeft;
     int rRight;
     int rUp;
     int rDown;
     int randomFlyThreshold;
     float randomFlyFade;
+    int randomWalkThreshold;
 }
 
 - (id)init
@@ -42,6 +48,7 @@
         isBlink = FALSE;
         isLive = TRUE;
         isFlying = FALSE;
+        isStable = TRUE;
         isRandomFly = FALSE;
         randomFlyThreshold = 0;
         randomFlyFade = 1;
@@ -62,9 +69,18 @@
     isBlink = FALSE;
     isLive = TRUE;
     isFlying = FALSE;
+    isStable = TRUE;
     isRandomFly = FALSE;
     randomFlyThreshold = 0;
     randomFlyFade = 1;
+    isRandomWalk = FALSE;
+    randomWalkThreshold = 0;
+    
+    // Locker
+    stableLock = [[NSObject alloc] init];
+    
+    // blood bar
+    [self setBloodVisibility:NO];
 }
 
 - (void) setDelegate:(id) delegate
@@ -89,8 +105,19 @@
     NSLog(@"[Mouse][setRandomFlyModeWithLeft:%d, right:%d, up:%d, down:%d]", left, right, up, down);
 }
 
+- (void) setRandomWalkModeWithLeft:(int)left right:(int)right
+{
+    rLeft = left;
+    rRight = right;
+    isRandomWalk = TRUE;
+}
+
 - (void) randomFly
 {
+    if ((!isFlying) || (!isStable)) {
+        return;
+    }
+    
     if (self.blood < MOUSE_BLOOD /2 && randomFlyFade > 0.1) {
         randomFlyFade -= 0.2;
     } else if (randomFlyFade == 0) {
@@ -111,10 +138,23 @@
     [self runAction:[CCActionSequence actionOne:move two:fade]];
 }
 
+- (void) randomWalk
+{
+    if ((isFlying) || (!isStable)) {
+        return;
+    }
+    
+    int width = (rRight - rLeft);
+    int p_x = rLeft + rand()%width;
+    int p_y = self.position.y;
+    
+    CCAction * move = [CCActionMoveTo actionWithDuration:0.2f position:ccp(p_x, p_y)];
+    [self runAction:move];
+}
 
 - (void) hittedBy:(Weapon *) weapon withEnergy:(float) energy
 {
-    NSLog(@"mouse is hitted with energy: %f", energy);
+    // NSLog(@"mouse is hitted with energy: %f", energy);
 
     if (!isLive) {
         return;
@@ -124,10 +164,10 @@
     
     if ([(CCNode *)weapon isKindOfClass:[Scoop class]]) {
         hitFactor = HIT_FACTOR_SCOOP;
-        NSLog(@"[Mouse hittedBy] hit by Scoop, hit factor: %d", hitFactor);
+        // NSLog(@"[Mouse hittedBy] hit by Scoop, hit factor: %d", hitFactor);
     } else if ([(CCNode *)weapon isKindOfClass:[Fork class]]) {
         hitFactor = HIT_FACTOR_FORK;
-        NSLog(@"[Mouse hittedBy] hit by Fork, hit factor: %d", hitFactor);
+        // NSLog(@"[Mouse hittedBy] hit by Fork, hit factor: %d", hitFactor);
     }
     
     int bloodLoss = (-1) * hitFactor * energy + rand()%10;
@@ -136,12 +176,30 @@
     }
     self.blood += bloodLoss;
     
+    // set blood bar
+    if (_bar.visible != YES) {
+        [self setBloodVisibility:YES];
+    }
+    [self refreshBloodBar:self.blood withTotal:MOUSE_BLOOD];
+    
     if (isRandomFly) {
         randomFlyThreshold += (-bloodLoss);
-        if (randomFlyThreshold > 5000) {
+        if (randomFlyThreshold > 5000 && isStable) {
             NSLog(@"[Mouse][randomFly] randomFlyThreshold: %d", randomFlyThreshold);
             randomFlyThreshold = 0;
             [self randomFly];
+        } else {
+            
+        }
+    }
+    if (isRandomWalk) {
+        if (isFlying || (!isStable)) {
+            randomWalkThreshold = 0;
+        } else {
+            randomWalkThreshold += (-bloodLoss);
+            if (randomWalkThreshold > 5000) {
+                [self randomWalk];
+            }
         }
     }
     
@@ -172,7 +230,7 @@
     [bloodlabel runAction:spawn1];
     
     
-    NSLog(@"Left blood: %d", self.blood);
+    // NSLog(@"Left blood: %d", self.blood);
     if (self.blood < 0) {
         NSLog(@"mouse is eliminated");
         isLive = FALSE;
@@ -184,9 +242,11 @@
     
 }
 
+/*
 - (void) stopForSeconds:(float) seconds{
     
 }
+*/
 
 // if mouse become weak, then blink
 - (void) blinkDuringTime:(float)time withOpacity:(float)opacity1 andOpacity:(float)opacity2
@@ -220,71 +280,106 @@
 
 - (void) flyTo:(int)height withTime:(float)seconds
 {
-    if (isFlying) {
-        return;
+    @synchronized(stableLock) {
+        NSLog(@"[Mouse][flyTo] locker: start");
+        if (isFlying || (!isStable)) {
+            NSLog(@"[Mouse][flyTo] locker: end");
+            return;
+        }
+        
+        int flyHeight = height;
+        if (isRandomFly && (height > rUp)) {
+            flyHeight = rUp;
+        }
+        
+        NSLog(@"[Mouse][flyTo] height: %d, time: %f", flyHeight, seconds);
+        isFlying = TRUE;
+        isStable = FALSE;
+        CCAction *flyAct = [CCActionMoveTo actionWithDuration:seconds position:ccp(self.position.x, flyHeight)];
+        // CCAction *delay = [CCActionDelay actionWithDuration:0.5f];
+        
+        CCAction *reset = [CCActionCallBlock actionWithBlock:^{
+            isStable = TRUE;
+        }];
+        CCAction *rotation = [CCActionRotateTo actionWithDuration:1.5f angle:45];
+        // CCAction *final = [CCActionSpawn actionOne:[CCActionSequence actions:flyAct, nil] two:rotation];
+        
+        // Add balloon
+        // [_balloon_node setVisible:TRUE];
+        balloon = (Balloon *)[CCBReader load:@"Balloon"];
+        balloon.position = _balloon_node.position;
+        [self addChild:balloon];
+        
+        [self runAction:[CCActionSequence actionOne:flyAct two:reset]];
+        [_mouse_body runAction:rotation];
+        
+        /*
+         CCAction *balloonRotate = [CCActionRotateBy actionWithDuration:1.5f angle:-45];
+         CCAction *balloonMove = [CCActionMoveBy actionWithDuration:1.5f position:ccp( (int)(-(float)self.position.y/1.5), 0)];
+         CCActionSpawn *balloonReverse = [CCActionSpawn actionOne:balloonRotate two:balloonMove];
+         [balloon runAction:balloonReverse];
+         */
+        NSLog(@"[Mouse][flyTo] locker: end");
     }
-    
-    int flyHeight = height;
-    if (isRandomFly && self.position.y + height > rUp) {
-        flyHeight = rUp;
-    }
-    
-    NSLog(@"[Mouse][flyTo] height: %d, time: %f", flyHeight, seconds);
-    isFlying = TRUE;
-    CCAction *flyAct = [CCActionMoveTo actionWithDuration:seconds position:ccp(self.position.x, flyHeight)];
-    // CCAction *delay = [CCActionDelay actionWithDuration:0.5f];
-    /*
-    CCAction *reset = [CCActionCallBlock actionWithBlock:^{
-        isFlying = FALSE;
-    }];*/
-    CCAction *rotation = [CCActionRotateBy actionWithDuration:1.5f angle:45];
-    // CCAction *final = [CCActionSpawn actionOne:[CCActionSequence actions:flyAct, nil] two:rotation];
-    
-    // Add balloon
-    // [_balloon_node setVisible:TRUE];
-    balloon = (Balloon *)[CCBReader load:@"Balloon"];
-    balloon.position = _balloon_node.position;
-    [self addChild:balloon];
-                          
-    [self runAction:flyAct];
-    [_mouse_body runAction:rotation];
-    
-    /*
-    CCAction *balloonRotate = [CCActionRotateBy actionWithDuration:1.5f angle:-45];
-    CCAction *balloonMove = [CCActionMoveBy actionWithDuration:1.5f position:ccp( (int)(-(float)self.position.y/1.5), 0)];
-    CCActionSpawn *balloonReverse = [CCActionSpawn actionOne:balloonRotate two:balloonMove];
-    [balloon runAction:balloonReverse];
-    */
 }
 
 - (void) balloonShooted
 {
-    [balloon removeFromParent];
     [MouseDlg balloonShooted];
+    [balloon removeFromParent];
 }
 
 - (void) fallToHeight:(int)height WithTime:(float)seconds
 {
-    /*
-    CCAction *fallAct = [CCActionMoveTo actionWithDuration:seconds position:ccp(self.position.x, height)];
-    CCAction *delay = [CCActionDelay actionWithDuration:0.5f];
-    CCAction *rotation = [CCActionRotateBy actionWithDuration:1.5f angle:45];
-    CCAction *final = [CCActionSpawn actionOne:[CCActionSequence actions:flyAct, nil] two:rotation];
-     */
+    @synchronized(stableLock) {
+        NSLog(@"[Mouse][fallToHeight] locker: start");
+        /*
+         CCAction *fallAct = [CCActionMoveTo actionWithDuration:seconds position:ccp(self.position.x, height)];
+         CCAction *delay = [CCActionDelay actionWithDuration:0.5f];
+         CCAction *rotation = [CCActionRotateBy actionWithDuration:1.5f angle:45];
+         CCAction *final = [CCActionSpawn actionOne:[CCActionSequence actions:flyAct, nil] two:rotation];
+         */
+        
+        isStable = FALSE;
+     }
     
-    CCAction *rotation = [CCActionRotateBy actionWithDuration:0.5f angle:-45];
+    [self stopAllActions];
+    [_mouse_body stopAllActions];
+    NSLog(@"[Mouse][fallToHeight] stop previous action");
+    
+    CCAction *rotation = [CCActionRotateTo actionWithDuration:0.5f angle:0];
     CCAction *fallAct = [CCActionMoveTo actionWithDuration:seconds position:ccp(self.position.x, height)];
     CCAction *reset = [CCActionCallBlock actionWithBlock:^{
+        isStable = TRUE;
         isFlying = FALSE;
     }];
+    
     // CCAction *final = [CCActionSpawn actionOne:[CCActionSequence actions:fallAct, reset, nil] two:rotation];
+    
     [self runAction:[CCActionSequence actions:fallAct, reset, nil]];
     [_mouse_body runAction:rotation];
+    NSLog(@"[Mouse][fallToHeight] start fall actions");
+    NSLog(@"[Mouse][fallToHeight] locker: end");
+
 }
 
+- (void) setBloodVisibility:(BOOL)visible
+{
+    [_barRef setVisible:visible];
+    [_bar setVisible:visible];
+}
+
+// display timer
+- (void) refreshBloodBar:(int)currentBlood withTotal:(int)totalBlood
+{
+    float percentage = ((float)currentBlood)/totalBlood;
+    [_bar setContentSize:CGSizeMake(_barRef.contentSize.width, _barRef.contentSize.height*percentage)];
+}
+
+/*
 - (void) giveUpThings
 {
     
 }
-
+*/
 @end
