@@ -185,6 +185,7 @@ static Levels currentLevel;
             [_weaponsDisplayer setScoop];
             
             [mouse setRandomFlyModeWithLeft:sceneWidth/1.5 right:(sceneWidth-100) up:(sceneHeight-60) down:sceneHeight/1.6];
+            
             break;
         default:
             NSLog(@"[Gamescene][initGameLevel] currentLevel is not set");
@@ -579,7 +580,7 @@ static Levels currentLevel;
         CCActionMoveTo *bgReset2 = [CCActionMoveTo actionWithDuration:0 position:ccp(levelBodyStartPoint,0)];
         CCAction *backgroundAction2 = [CCActionSequence actionOne:[bgMove2 copy] two:[bgReset2 copy]];
         CCAction *repeatRunning2 = [CCActionRepeatForever actionWithAction:backgroundAction2];
-        CCAction *bgSpeed2 =[CCActionSpeed actionWithAction:repeatRunning2 speed:1.0f];
+        CCAction *bgSpeed2 =[CCActionSpeed actionWithAction:repeatRunning2 speed:1.5f];
         // [_level3Node runAction:[CCActionFollow actionWithTarget:_bgNode]];
         [_level3Node runAction:bgSpeed2];
     }
