@@ -166,13 +166,6 @@
 - (void) setBarWithPercentage:(float)percentage
 {
     [_bar setContentSize:CGSizeMake(_barRef.contentSize.width*percentage, _barRef.contentSize.height)];
-    /*
-    //[visibleBar setContentSize:CGSizeMake(_bar.contentSize.width*percentage, _bar.contentSize.height)];
-    NSLog(@"[setBarWithPercentage] totalwidth = %f", _barRef.contentSize.width);
-    NSLog(@"[setBarWithPercentage] currentwidth = %f", _barRef.contentSize.width*percentage);
-    ///visibleBar.position = _bar.position;
-    //visibleBar.anchorPoint = _bar.anchorPoint;
-     */
 }
 
 //debug by lxp

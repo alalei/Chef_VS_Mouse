@@ -31,7 +31,6 @@ static Levels currentLevel;
     // Nodes defined in this file
     Mouse * mouse;
     CCNode *bulletNode;
-    // CCActionManager *actionManager;
     
     // moving backgroud in loop
     CCActionSequence * backgroundAction;
@@ -75,6 +74,7 @@ static Levels currentLevel;
 - (void)didLoadFromCCB
 {
     NSLog(@"[Gamescene] didLoadFromCCB");
+    
     // debug setting
     _physicsNode.debugDraw = false;
     
@@ -92,7 +92,6 @@ static Levels currentLevel;
     bgResetPoint = (float)backgroundWidth/3/sceneWidth*(-1);
     levelBodyResetPoint = -1;
     levelBodyStartPoint = 1;
-    // levelBodyStartPoint = (float)backgroundWidth/sceneWidth/2;
     
     // moving background
     [self runBackground];
@@ -115,7 +114,6 @@ static Levels currentLevel;
     isWin = FALSE;
     
     // set timer
-    // [_timer resetWithTime:GAME_TIME_SECOND];
     [_timer startWithTime:GAME_TIME_SECOND];
     [_timer setDelegate:self];
     
@@ -141,7 +139,9 @@ static Levels currentLevel;
 - (void) initGameLevel
 {
     switch (currentLevel) {
+            
         case level1:
+            
             _level3Node.visible = FALSE;
             [_level3Node removeFromParent];
             [_level2_instruction setVisible:FALSE];
@@ -157,7 +157,9 @@ static Levels currentLevel;
             [self pause];
             NSLog(@"[Gamescene][initGameLevel] level 1");
             break;
+            
         case level2:
+            
             if (mouse != NULL) {
                 [mouse flyTo:(sceneHeight * _fly_limit_node.position.y) withTime:2.0f];
             }
@@ -174,7 +176,9 @@ static Levels currentLevel;
             [self pause];
             NSLog(@"[Gamescene][initGameLevel] level 2");
             break;
+            
         case level3:
+            
             _level3Node.visible = TRUE;
             _level1_instruction.visible = FALSE;
             [_level1_instruction removeFromParent];
@@ -185,8 +189,8 @@ static Levels currentLevel;
             [_weaponsDisplayer setScoop];
             
             [mouse setRandomFlyModeWithLeft:sceneWidth/1.5 right:(sceneWidth-100) up:(sceneHeight-60) down:sceneHeight/1.6];
-            
             break;
+            
         default:
             NSLog(@"[Gamescene][initGameLevel] currentLevel is not set");
             currentLevel = level1;
@@ -199,14 +203,12 @@ static Levels currentLevel;
 - (void) level1Play
 {
     _level1_instruction.visible = FALSE;
-    // [_level1_instruction removeFromParentAndCleanup:TRUE];
     [self resume];
 }
 
 - (void) level2Play
 {
     _level2_instruction.visible = FALSE;
-    // [_level2_instruction removeFromParentAndCleanup:TRUE];
     [self resume];
 }
 
@@ -223,12 +225,8 @@ static Levels currentLevel;
 - (void)launchBullet:(Bullets) bullet
 {
     CGPoint launchDirection = ccp(1, 0.7);
-    
-    int distance = _mouseJointNode.position.x - _chef.position.x;
-    // NSLog(@"distance: %d", distance);
-    
     bulletNode.physicsBody.allowsRotation = true;
-    
+    int distance = _mouseJointNode.position.x - _chef.position.x;
     switch (bullet)
     {
         case weapon_scoop:
@@ -241,11 +239,10 @@ static Levels currentLevel;
             float max_ref = MAX(_mouseJointNode.position.x - _chef.position.x, _mouseJointNode.position.y - _chef.position.y);
             
             launchDirection = ccp((_mouseJointNode.position.x - _chef.position.x)/max_ref, (_mouseJointNode.position.y - _chef.position.y)/max_ref);
+            
             // rotate the bullets
             float angle = - atan(launchDirection.y/launchDirection.x);
             [bulletNode runAction:[CCActionRotateBy actionWithDuration:0 angle:(angle/3.14)*180]];
-            // NSLog(@"bullet rotate angle: %f",angle);
-            // bulletNode.physicsBody.allowsRotation = FALSE;
             break;
         default:break;
     }
@@ -265,7 +262,6 @@ static Levels currentLevel;
                 // manually create and apply a force to launch the bullt
                 force = ccpMult(launchDirection, distance*5);
                 [bulletNode.physicsBody applyForce:force];
-                // [bulletNode runAction:[CCActionRemove action]];
                 break;
             case weapon_fork:
                 force = ccpMult(launchDirection, distance*2);
@@ -277,8 +273,6 @@ static Levels currentLevel;
     @catch (NSException *exception) {
         NSLog(@"Exception: %@", exception.description);
     }
-
-    
 }
 
 /*
@@ -290,8 +284,6 @@ static Levels currentLevel;
 
 - (void)touchBegan:(UITouch *)touch withEvent:(UIEvent *)event
 {
-    // NSLog(@"Touch begin");
-    
     CGPoint touchLocation = [touch locationInNode:_physicsNode];
     
     // move the mouseJointNode to the touch position
@@ -317,34 +309,30 @@ static Levels currentLevel;
             // Chef launch bullet if click other place
             else {
                 [self launchBullet:currentBullet];
-                // [self launchScoop];
-                // [self launchFork];
             }
         }
         @catch (NSException *exception) {
             NSLog(@"[Gamescene][touchBegan] Exception: %@", exception.description);
         }
     }
-    
 }
 
 
 - (void)touchMoved:(UITouch *)touch withEvent:(UIEvent *)event
 {
-    // NSLog(@"Touch moved");
+    // TODO
 }
 
 
 -(void) touchEnded:(UITouch *)touch withEvent:(UIEvent *)event
 {
-    // NSLog(@"Touch ended");
-    
+    // TODO
 }
 
 
 -(void) touchCancelled:(UITouch *)touch withEvent:(UIEvent *)event
 {
-    // NSLog(@"Touch cancelled");
+    // TODO
 }
 
 
@@ -357,8 +345,6 @@ static Levels currentLevel;
  */
 -(void)ccPhysicsCollisionPostSolve:(CCPhysicsCollisionPair *)pair Scoop:(Scoop *)scoop wildcard:(CCNode *)target
 {
-    // NSLog(@"target class scoop %@", [target class]);
-    
     if ([target isKindOfClass:[Weapon class]]) {
         return;
     }
@@ -399,8 +385,6 @@ static Levels currentLevel;
             default:
                 break;
         }
-        
-
     }
     
     [scoop removeFromParent];
@@ -408,14 +392,11 @@ static Levels currentLevel;
 
 -(void)ccPhysicsCollisionPostSolve:(CCPhysicsCollisionPair *)pair Fork:(Fork *)fork wildcard:(CCNode *)target
 {
-    // NSLog(@"target class Fork %@", [target class]);
-    
     if ([target isKindOfClass:[Weapon class]]) {
         return;
     }
     
     if ([target isKindOfClass:[Mouse class]]) {
-        // NSLog(@"Mouse hitted by fork");
         float energy = [pair totalKineticEnergy];
         [(Mouse *)target hittedBy:(Fork *)fork withEnergy:energy];
         
@@ -432,8 +413,6 @@ static Levels currentLevel;
 
 -(void)ccPhysicsCollisionPostSolve:(CCPhysicsCollisionPair *)pair Balloon:(Balloon *)balloon Fork:(Fork *)fork
 {
-    // NSLog(@"balloon hitted by fork");
-    // NSLog(@"target class Balloon %@", [fork class]);
     float energy = [pair totalKineticEnergy];
     NSLog(@"Balloon energy: %f",energy);
     if (energy > 1000) {
@@ -474,7 +453,6 @@ static Levels currentLevel;
 {
     NSLog(@"clicked Retry");
     @try {
-        // [[CCDirector sharedDirector]replaceScene:[CCBReader loadAsScene:@"Gamescene"]];
         _menu.visible = FALSE;
         [self retry];
     } @catch (NSException * e) {
@@ -520,14 +498,12 @@ static Levels currentLevel;
         default:
             break;
     }
-    // [self resume];
+
     [self retry];
-    
 }
 
 - (void)afterDie
 {
-    // TODO
     NSLog(@"[Gamescene] mouse die");
     isWin = TRUE;
     [self finishGame];
@@ -548,7 +524,6 @@ static Levels currentLevel;
 
 - (void) retry
 {
-    
     [[CCDirector sharedDirector]replaceScene:[CCBReader loadAsScene:@"Gamescene"] withTransition:[CCTransition transitionFadeWithDuration:0.5f]];
     [[CCDirector sharedDirector] resume];
     // [[CCDirector sharedDirector]replaceScene:[CCBReader loadAsScene:@"Gamescene"]];
@@ -593,11 +568,9 @@ static Levels currentLevel;
     if (isWin) {
         [_scoreBoard setTitle:@"You Win!"];
         [_timer pause];
-        // win the game
         NSLog(@"----- You Win!!! -----");
     } else {
         [_scoreBoard setTitle:@"Try again!"];
-        // time up or other conditions
         NSLog(@"----- Sorry, time up -----");
         [self pause];
     }

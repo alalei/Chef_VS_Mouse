@@ -17,17 +17,6 @@
     isJumping = FALSE;
 }
 
-/*
-- (id)init
-{
-    self = [super init];
-    if (self!= NULL) {
-        isJumping = FALSE;
-    }
-    NSLog(@"[Chef] init");
-    return self;
-}
-*/
 
 - (void) jumpTo:(int)height withTime:(float)seconds
 {
